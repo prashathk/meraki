@@ -1,0 +1,7 @@
+project_id = "your-project"
+region = "us-central1"
+image = "us-central1-docker.pkg.dev/your-project/meraki/meraki:IMMUTABLE_BUILD_ID"
+gemini_model = "SET_A_SUPPORTED_GEMINI_MODEL"
+database_secret_id = "meraki-database-url"
+database_user_password = "SET_LOCALLY_DO_NOT_COMMIT"
+web_origin = "https://your-project.web.app"

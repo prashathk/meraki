@@ -1,0 +1,12 @@
+Northbridge University
+Illustrative sample only - not actual university offerings.
+
+Faculty of Computing
+BSc Artificial Intelligence
+An introduction to computer science, mathematics and analytical problem solving.
+BSc Software Engineering
+Study technology, design and reliable software development.
+BSc Applied Data Analytics
+Study data, statistics, mathematics and business analysis.
+
+Course details pages must be reviewed and set individually before publication.

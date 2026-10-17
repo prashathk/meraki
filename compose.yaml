@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: meraki
+      POSTGRES_USER: meraki
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Generate private local settings first}
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meraki"]
+      interval: 5s
+      retries: 10
+  api:
+    build: .
+    ports: ["127.0.0.1:8080:8080"]
+    environment: &env
+      APP_ENV: development
+      AUTH_PROVIDER: development
+      DATABASE_URL: postgresql+psycopg://meraki:${POSTGRES_PASSWORD:?Generate private local settings first}@db/meraki
+      DEMO_PASSWORD: ${DEMO_PASSWORD:?Generate private local settings first}
+    depends_on:
+      db: {condition: service_healthy}
+    volumes: ["private-data:/app/data"]
+  worker:
+    build: .
+    command: ["python", "-m", "worker.run"]
+    environment: *env
+    depends_on:
+      db: {condition: service_healthy}
+    volumes: ["private-data:/app/data"]
+volumes:
+  postgres-data:
+  private-data:

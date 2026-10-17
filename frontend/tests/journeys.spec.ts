@@ -1,0 +1,42 @@
+import {demoPassword} from '../../scripts/local-config.mjs';
+import {test,expect} from '@playwright/test';
+test('home, private recommendations, comparison and PDF download',async({page})=>{
+ await page.goto('/');await expect(page.getByRole('heading',{name:'Find your path. Follow your passion.'})).toBeVisible();
+ await page.screenshot({path:'../output/meraki-home-desktop.png',fullPage:true});
+ await page.goto('/auth');await page.getByLabel('Email address').fill('student@meraki.local');await page.getByLabel('Password',{exact:true}).fill(demoPassword());await page.getByRole('button',{name:'Log in',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Find your next opportunity.'})).toBeVisible();
+ await page.getByRole('button',{name:'Generate recommendations'}).click();
+ await expect(page.locator('.course-card').first()).toBeVisible();
+ await expect(page.locator('.course-card img')).toHaveCount(0);
+ await page.screenshot({path:'../output/meraki-student-desktop.png',fullPage:true});
+ const download=page.waitForEvent('download');await page.getByRole('button',{name:'Download shortlist'}).click();expect((await download).suggestedFilename()).toContain('.pdf');
+ await page.locator('.course-card').first().getByRole('button',{name:'Compare',exact:true}).click();
+ await page.getByRole('link',{name:/Compare courses/}).click();await expect(page.getByRole('heading',{name:'Compare your possibilities.'})).toBeVisible();
+ await expect(page.locator('table')).toBeVisible();
+ await page.setViewportSize({width:390,height:844});await page.goto('/app/recommendations');await expect(page.getByRole('heading',{name:'Find your next opportunity.'})).toBeVisible();
+ await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+ await page.screenshot({path:'../output/meraki-student-mobile.png',fullPage:true});
+});
+test('university workspace has multi-course review and extraction controls',async({page})=>{
+ const stamp=Date.now();
+ await page.goto('/auth?role=representative');await page.getByLabel('Email address').fill('university@meraki.local');await page.getByLabel('Password',{exact:true}).fill(demoPassword());await page.getByRole('button',{name:'Log in',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Prepare courses for discovery.'})).toBeVisible();
+ await page.getByLabel('Or enter a public source URL').fill('https://example.com/catalogue');
+ await page.locator('input[type=file]').setInputFiles({name:'university-prospectus.txt',mimeType:'text/plain',buffer:Buffer.from(`Faculty of Computing\nBSc Browser Robotics ${stamp}\nBSc Browser Data Science ${stamp}\nBSc Browser Software Engineering ${stamp}\n`)});
+ await page.getByRole('button',{name:'Extract all courses'}).click();
+ await expect(page.getByText(`BSc Browser Robotics ${stamp}`,{exact:true})).toBeVisible({timeout:30000});
+ await page.getByRole('button',{name:'Edit details'}).first().click();await expect(page.getByRole('dialog')).toBeVisible();
+ await expect(page.getByText('Student-facing course link',{exact:true})).toBeVisible();
+ await page.getByLabel('Use a different URL').check();await page.getByLabel('Student course details URL').fill('https://example.com/browser-course');await page.getByRole('button',{name:'Save reviewed degree'}).click();
+ await expect(page.getByRole('dialog')).toHaveCount(0);
+ await page.getByRole('button',{name:'Dismiss notification'}).click().catch(()=>{});
+ await page.getByRole('heading',{name:'Prepare courses for discovery.'}).click();
+ await page.screenshot({path:'../output/meraki-university-desktop.png',fullPage:true});
+});
+test('administrator approval, version and analytics interfaces',async({page})=>{
+ await page.goto('/auth');await page.getByLabel('Email address').fill('admin@meraki.local');await page.getByLabel('Password',{exact:true}).fill(demoPassword());await page.getByRole('button',{name:'Log in',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Review course submissions.'})).toBeVisible();
+ await page.getByRole('link',{name:'Ontology versions'}).click();await expect(page.getByRole('button',{name:'Publish approved revisions'})).toBeVisible();
+ await page.getByRole('link',{name:'Activity analytics'}).click();await expect(page.getByRole('heading',{name:'Understand the journey.'})).toBeVisible();
+ await page.screenshot({path:'../output/meraki-admin-desktop.png',fullPage:true});
+});

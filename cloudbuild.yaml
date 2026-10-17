@@ -1,0 +1,9 @@
+substitutions:
+  _REGION: us-central1
+  _REPOSITORY: meraki
+  _FIREBASE_CONFIG: '{}'
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ['build', '--build-arg', 'VITE_FIREBASE_CONFIG=${_FIREBASE_CONFIG}', '-t', '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/meraki:$BUILD_ID', '.']
+images: ['${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/meraki:$BUILD_ID']
+# Deliberately build-only. Deployment is a separate reviewed operation.

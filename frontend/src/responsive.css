@@ -1,0 +1,141 @@
+/* Shared sizing rules follow the theme so every surface can shrink to its container. */
+#root { min-width: 0; }
+.dev-banner .live-dot { flex-shrink: 0; }
+.public-header, .hero, .section-wrap, .auth-page { width: 100%; }
+/* Paint the navigation across the viewport; only its contents share the hero's
+   1300px measure. Percentage sizing also leaves room for browser scrollbars. */
+.public-header {
+  max-width: none;
+  margin: 0;
+  height: auto;
+  min-height: 94px;
+  padding-block: 20px;
+  padding-inline: max(48px, calc((100% - 1300px) / 2 + 48px));
+  border-bottom: 1px solid var(--line);
+}
+.public-header > * { min-width: 0; }
+.public-header nav a { white-space: nowrap; }
+.header-actions { flex-wrap: wrap; justify-content: flex-end; }
+.hero { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+.hero-copy, .hero-art, .role-card > div, .auth-card, .auth-intro,
+.course-card, .page-heading > div, .list-row > div { min-width: 0; }
+.role-grid, .tag-selector, .two-fields, .source-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.three-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.review-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); }
+.hero h1 { font-size: clamp(2rem, 4.5vw, 3.6875rem); letter-spacing: -.035em; }
+.hero-actions, .hero-trust, .card-actions { flex-wrap: wrap; }
+.button { max-width: 100%; white-space: normal; text-align: center; }
+.text-link { white-space: nowrap; }
+.public-header nav { flex-wrap: wrap; }
+.role-card, .course-card, .panel, .list-row, .auth-card, .modal { overflow-wrap: anywhere; }
+input, select, textarea { min-width: 0; max-width: 100%; }
+.search-field { min-width: 0; }
+.table-scroll { max-width: 100%; }
+.modal-backdrop { padding: 16px; }
+.modal { max-height: calc(100dvh - 32px); }
+.review-grid > section:first-child { max-height: none; }
+
+/* The sidebar and content share a grid row, without assuming a banner height. */
+.workspace { display: grid; grid-template-columns: 238px minmax(0, 1fr); align-items: start; }
+.app-header { grid-column: 1 / -1; min-width: 0; }
+.workspace .sidebar {
+  grid-column: 1; grid-row: 2; position: sticky; top: 0; bottom: auto;
+  width: 100%; height: 100dvh; min-height: 0; overflow-y: auto;
+}
+.workspace-main { grid-column: 2; grid-row: 2; margin-left: 0; width: 100%; max-width: 1670px; }
+.metric-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+@media (max-width: 1100px) {
+  .public-header { height: auto; min-height: 84px; padding: 20px 26px; gap: 20px; flex-wrap: wrap; }
+  .public-header nav { order: 3; width: 100%; justify-content: center; gap: 16px 28px; }
+  .hero { padding: 48px 26px; gap: 28px; }
+  .hero-art { min-height: 340px; }
+  .orbit { width: min(100%, 370px); height: auto; aspect-ratio: 1; }
+  .orbit-two { width: min(75%, 270px); }
+  .card-b { right: 0; }
+  .role-card { flex-direction: column; }
+  .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .course-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 1000px) {
+  .workspace { grid-template-columns: minmax(0, 1fr); }
+  .app-header { height: 73px; padding: 0 20px; gap: 16px; }
+  .app-header .brand { width: auto; font-size: 24px; }
+  .header-center { display: none; }
+  .user-label { margin-left: auto; }
+  .user-label > span:last-child { display: none; }
+  .mobile-menu { display: flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; }
+  .workspace .sidebar { display: none; }
+  .workspace .sidebar.open {
+    display: flex; position: relative; top: auto; grid-column: 1; grid-row: 2;
+    width: 100%; height: auto; max-height: calc(100dvh - 73px); box-shadow: none;
+    padding: 20px; border-right: 0; border-bottom: 1px solid var(--line);
+  }
+  .sidebar-bottom { margin-top: 16px; padding-top: 0; }
+  .sidebar-bottom .theme-toggle { width: fit-content; min-width: 180px; }
+  .workspace-main { grid-column: 1; grid-row: 3; padding: 28px 24px 48px; }
+}
+
+@media (max-width: 800px) {
+  .public-header nav { display: flex; font-size: 12px; gap: 12px 20px; }
+  .header-actions .button { display: inline-flex; }
+  .hero { grid-template-columns: minmax(0, 1fr); padding: 36px 24px 44px; min-height: 0; }
+  .hero h1 { font-size: clamp(2rem, 7vw, 3rem); margin: 18px 0; }
+  .hero-copy { max-width: 600px; }
+  .hero-art { transform: none; max-width: 430px; min-height: 330px; }
+  .hero-trust { gap: 8px; line-height: 1.6; }
+  .role-grid, .three-grid, .tag-selector, .two-fields, .source-fields, .review-grid { grid-template-columns: minmax(0, 1fr); }
+  .role-card { flex-direction: row; }
+  .auth-page { grid-template-columns: minmax(0, 1fr); padding: 24px; }
+  .auth-intro { padding: 12px 0; }
+  .auth-intro h1 { font-size: clamp(2rem, 7vw, 2.75rem); }
+  .section-wrap { padding: 40px 24px; }
+  .page-heading h1 { font-size: clamp(1.6rem, 4.5vw, 1.9375rem); }
+  .list-row > div { min-width: 0; flex-basis: 100%; }
+}
+
+@media (max-width: 600px) {
+  .public-header { padding: 16px; gap: 16px; }
+  .header-actions { gap: 12px; margin-left: auto; }
+  .header-actions .button { display: none; }
+  .header-actions .theme-toggle { min-width: 44px; min-height: 44px; justify-content: center; padding: 10px; }
+  .header-actions .theme-switch { display: none; }
+  .header-actions .text-link { min-height: 44px; }
+  .public-header .brand { font-size: 24px; gap: 6px; }
+  .public-header nav { justify-content: space-between; gap: 12px; font-size: 11px; }
+  .public-header nav a { padding: 8px 0; }
+  .hero { padding: 28px 20px 36px; gap: 32px; }
+  .hero h1 { font-size: clamp(2rem, 8vw, 2.75rem); }
+  .hero-actions { flex-direction: column; align-items: stretch; gap: 12px; margin-top: 24px; }
+  .hero-trust { display: grid; grid-template-columns: 18px minmax(0, 1fr); }
+  .hero-trust > span { display: none; }
+  .hero-art { min-height: 300px; }
+  .float-card { padding: 12px; gap: 8px; max-width: 100%; transform: none; }
+  .float-card .icon-box { width: 36px; height: 36px; }
+  .card-a { top: 0; }
+  .card-b { bottom: 28px; }
+  .float-label { left: 0; bottom: 0; font-size: 10px; }
+  .art-spark { right: 12px; top: 50px; }
+  .section-wrap { padding: 32px 20px; }
+  .role-card { padding: 22px; flex-direction: column; gap: 16px; }
+  .role-card h3 { font-size: 21px; }
+  .impact-band { margin: 12px 20px 32px; padding: 24px; flex-direction: column; gap: 16px; }
+  .auth-page { padding: 20px; }
+  .auth-card { padding: 22px; }
+  .app-header { padding: 0 16px; gap: 10px; }
+  .workspace-main { padding: 24px 16px 40px; }
+  .panel, .preferences { padding: 20px 16px; }
+  .panel.table-scroll { padding: 0; }
+  .page-heading { gap: 16px; }
+  .card-footer { flex-direction: column; align-items: stretch; }
+  .card-actions { width: 100%; justify-content: space-between; gap: 12px; }
+  .metric { flex-direction: column; align-items: flex-start; }
+  .metric strong { font-size: 24px; }
+  input, select, textarea { font-size: 16px; }
+  .button, .segmented button, .theme-toggle, .chip.selectable { min-height: 44px; }
+  .segmented button { gap: 6px; padding: 10px 6px; }
+  .modal { padding: 24px 16px; }
+  .modal h2 { padding-right: 24px; font-size: 22px; }
+  footer { overflow-wrap: anywhere; }
+}
