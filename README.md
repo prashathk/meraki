@@ -2,11 +2,13 @@
 
 **Find Your Path. Follow Your Passion.**
 
+**Live prototype:** https://meraki-api-fgeq7eikua-ue.a.run.app/ — scheduled to shut down on **14 November 2026 at 09:00 Asia/Colombo**. See [deployment, access and verification details](docs/LIVE_PROTOTYPE.md).
+
 Education and course discovery by **CAPS Innovation** - Ayantha Fernando, Prashath Kandasamy and Charith Perera.
 
 A functional local implementation of the approved Meraki frontend direction and core prototype workflows. Students receive private explained recommendations; verified university teams extract multiple degree courses from documents/URLs and review them as a list; administrators approve revisions and activate/recover ontology versions.
 
-**Status:** local functional MVP, not a completed or certified production deployment. See [the implementation checklist](docs/IMPLEMENTATION_CHECKLIST.md) for remaining master-prompt scope and release gates. Fresh demo seed records are fictional; the bundled original ontology can be migrated as labelled historical university offerings.
+**Status:** functional prototype deployed to Cloud Run with Firebase authentication, a Cloud SQL trial and private storage. It is not a certified production release. See [the implementation checklist](docs/IMPLEMENTATION_CHECKLIST.md) for remaining master-prompt scope and release gates. Fresh demo seed records are fictional; the bundled original ontology can be migrated as labelled historical university offerings.
 
 For a portable deployment release, start with [HANDOVER.md](HANDOVER.md). It covers fresh-machine setup, data import, verification, Google Cloud release and rollback.
 

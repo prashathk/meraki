@@ -9,6 +9,12 @@ RUN npm run build
 FROM python:3.13-slim
 WORKDIR /app
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+# Production uploads are accepted only after a real malware scan. Bake current
+# signatures into the image so request handling does not need root or downloads.
+RUN apt-get update && apt-get install -y --no-install-recommends clamav ca-certificates \
+    && freshclam --stdout \
+    && rm -rf /var/lib/apt/lists/*
+ENV CLAMSCAN_PATH=/usr/bin/clamscan
 COPY backend/requirements.lock.txt /app/requirements.lock.txt
 RUN pip install --no-cache-dir -r requirements.lock.txt
 COPY backend/ /app/backend/

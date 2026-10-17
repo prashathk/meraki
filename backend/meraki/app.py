@@ -54,7 +54,7 @@ def current_course(db,cid):
 def health():
     from .gemini import status
     gemini=status()
-    return {'status':'ok','auth_provider':AUTH,'environment':ENV,'gemini_configured':gemini['configured'],'gemini':gemini}
+    return {'status':'ok','auth_provider':AUTH,'environment':ENV,'google_sign_in_enabled':os.getenv('FIREBASE_GOOGLE_SIGN_IN_ENABLED','false').lower()=='true','gemini_configured':gemini['configured'],'gemini':gemini}
 @app.get('/api/taxonomy')
 def taxonomy(db=Depends(db_session)):return get_taxonomy(db)
 @app.get('/api/me')

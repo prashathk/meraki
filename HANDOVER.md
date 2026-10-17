@@ -2,6 +2,8 @@
 
 Start here. Prepared 17 October 2026 for CAPS Innovation: Ayantha Fernando, Prashath Kandasamy and Charith Perera.
 
+**Deployment update:** a Cloud Run prototype is now live. See [LIVE_PROTOTYPE.md](docs/LIVE_PROTOTYPE.md) for the verified URL, access instructions, current limitations and scheduled shutdown. The original packaging checks below describe the handover state before this deployment.
+
 ## What is delivered
 
 React/TypeScript frontend with Midnight Focus dark/light themes; FastAPI API; extraction worker; SQLAlchemy/Alembic persistence; original ontology; admin review/publication; dependency lockfiles; tests; container, Firebase Hosting, Cloud Build and Terraform configuration.
