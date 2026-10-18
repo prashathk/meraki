@@ -13,4 +13,6 @@ export async function downloadReport(id:string) {
   const url=URL.createObjectURL(await response.blob());const a=document.createElement('a');a.href=url;a.download='Meraki-shortlist.pdf';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 export type Tag={id:string;label:string;type:string};
-export type Course={id:string;course_id:string;title:string;university:string;faculty:string;tags:string[];course_url:string;match?:number;matched_tags?:string[];mode?:string;duration?:string;evidence?:string;state?:string;revision?:number;source_id?:string;review_comment?:string;illustrative?:boolean;org:string;owner:string;url_mode?:string;reviewed?:boolean};
+export type Course={id:string;course_id:string;title:string;university:string;faculty:string;tags:string[];course_url:string;match?:number;scoring_version?:string;scoring_details?:{interest:CategoryScoring;aptitude:CategoryScoring};components?:{interest:number;aptitude:number};matched_tags?:string[];mode?:string;duration?:string;evidence?:string;state?:string;revision?:number;source_id?:string;review_comment?:string;illustrative?:boolean;org:string;owner:string;url_mode?:string;reviewed?:boolean};
+
+export type CategoryScoring={matched_score_sum:number;degree_count:number;coverage:number;contribution:number};

@@ -12,6 +12,8 @@ A functional local implementation of the approved Meraki frontend direction and 
 
 For a portable deployment release, start with [HANDOVER.md](HANDOVER.md). It covers fresh-machine setup, data import, verification, Google Cloud release and rollback.
 
+Student recommendations support 0–100% scores and configurable interest/aptitude contributions. Coverage uses each degree's full unique category counts. See [the scoring policy and snapshot contract](docs/RECOMMENDATION_SCORING.md).
+
 ## Start locally on Windows
 
 Prerequisites: Python 3.13 and Node.js 22. Dependencies are installed by the setup commands below.

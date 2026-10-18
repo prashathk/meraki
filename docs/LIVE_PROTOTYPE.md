@@ -48,3 +48,9 @@ The deployed environment passed checks for:
 Temporary Firebase test identities and disposable test records/objects were removed after verification. Local checks also passed: 38 backend tests and the frontend production build.
 
 ClamAV signatures are baked into the image at build time; rebuild with updated signatures before extending the prototype beyond its planned trial. Production document uploads fail closed when scanning is unavailable. Gemini uses the configured free-tier model allowlist and reports quota/access failures rather than falling back to a paid model; upstream quota availability cannot be guaranteed.
+
+## Scoring update — 18 October 2026
+
+Student recommendations now support per-tag percentage scores and configurable contributions under `degree-category-score-coverage-v2`. The calculation uses each degree's complete unique category counts, with the same ranking in SQL before limiting results. Profile settings, calculation details and policy text are preserved in private history and PDFs; earlier recommendation snapshots retain their original results and policy. See [the scoring contract](RECOMMENDATION_SCORING.md).
+
+Verification passed: 87 backend tests, the frontend build, desktop/mobile light/dark checks, PDF rendering, 18 comparisons on live PostgreSQL, and live API checks for weights, profile persistence, snapshots and unchanged legacy history/PDF text. The release was tested at a preview revision before public traffic switched. No database schema migration or user-data rewrite was needed. The scheduled shutdown date remains unchanged.

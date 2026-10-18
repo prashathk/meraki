@@ -62,7 +62,7 @@ def test_full_legacy_review_publication_recommendation_and_restore(migrated_clie
     tags=c.get('/api/taxonomy').json();interest=next(t['id'] for t in tags if t['label']=='Chemistry' and t['type']=='interest')
     run=c.post('/api/recommendations',headers=student,json={'tags':[interest,'mathematics']});assert run.status_code==200,run.text
     shared=[x for x in run.json()['items'] if x['legacy_id'].endswith('#BachelorOfScienceHonoursInChemistry')];assert len(shared)==2
-    assert shared[0]['course_id']!=shared[1]['course_id'];assert all(x['match']==100 for x in shared)
+    assert shared[0]['course_id']!=shared[1]['course_id'];assert all(0<x['match']<=100 and x['scoring_details']['interest']['degree_count']>=1 for x in shared)
     pdf=c.get('/api/recommendations/'+run.json()['id']+'/report',headers=student);assert pdf.status_code==200
     from pypdf import PdfReader
     text=' '.join(p.extract_text() for p in PdfReader(io.BytesIO(pdf.content)).pages)

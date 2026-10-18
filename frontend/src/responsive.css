@@ -139,3 +139,28 @@ input, select, textarea { min-width: 0; max-width: 100%; }
   .modal h2 { padding-right: 24px; font-size: 22px; }
   footer { overflow-wrap: anywhere; }
 }
+
+/* Scoring controls share the existing Midnight Focus surfaces and tokens. */
+.contribution-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 240px)); gap: 20px; margin: 24px 0 12px; }
+.contribution-controls label, .preference-score { min-width: 0; }
+.contribution-controls output { display: block; padding: 12px 14px; min-height: 46px; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; font-variant-numeric: tabular-nums; }
+.preference-scores { display: grid; gap: 12px; margin-top: 20px; }
+.preference-score { display: grid; grid-template-columns: minmax(0, 1fr) 100px; gap: 16px; align-items: center; }
+.preference-score input { margin: 0; font-variant-numeric: tabular-nums; }
+.preference-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.preference-effective { color: var(--accent); margin: 16px 0; }
+.scoring-explanation { overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.scoring-explanation dl { margin: 12px 0; }
+.scoring-explanation dl > div + div { margin-top: 12px; }
+.scoring-explanation dt { font-weight: 700; }
+.scoring-explanation dd { margin: 4px 0 0; line-height: 1.65; }
+.history-entry + .history-entry { margin-top: 20px; }
+.history-entry h2 { font-size: 20px; margin: 0; }
+.history-entry p { overflow-wrap: anywhere; }
+.history-snapshot summary { cursor: pointer; padding: 12px 0; color: var(--accent); font-weight: 700; }
+.history-snapshot > section { padding-block: 16px; border-top: 1px solid var(--line); }
+@media (max-width: 600px) {
+  .contribution-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .preference-score { grid-template-columns: minmax(0, 1fr) 88px; gap: 12px; }
+  .preference-actions, .preference-actions .button { width: 100%; }
+}

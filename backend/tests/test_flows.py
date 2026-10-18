@@ -19,7 +19,7 @@ def login(c,email='student@meraki.local'):
 def test_catalogue_and_deterministic_scoring(client):
     s=login(client);courses=client.get('/api/courses').json();assert len(courses)==6
     a=client.post('/api/recommendations',headers=s,json={'tags':['technology','mathematics']});assert a.status_code==200,a.text
-    rows=a.json()['items'];assert len({x['course_id'] for x in rows})==len(rows);assert rows[0]['match']==100
+    rows=a.json()['items'];assert len({x['course_id'] for x in rows})==len(rows);assert rows[0]['match']==85
     assert client.post('/api/recommendations',headers=s,json={'tags':[]}).status_code==422
     assert client.post('/api/recommendations',headers=s,json={'tags':['bad']} ).status_code==422
     assert rank([{'course_id':'x','title':'A','tags':['technology']}],['technology'])[0]['match']==100

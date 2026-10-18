@@ -2,12 +2,14 @@ import os,io,json,hashlib,secrets,time
 from datetime import datetime,timezone,timedelta
 from contextlib import asynccontextmanager
 from collections import defaultdict
-from typing import Literal
+from typing import Literal,Annotated
 from pathlib import Path
 from fastapi import FastAPI,Depends,HTTPException,UploadFile,File,Form,Request
 from fastapi.responses import Response,FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel,Field
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel,Field,ConfigDict
 from sqlalchemy import select,update,delete,func
 from .db import Session,Record,Active,VersionCourse,Edge,record,add,uid,now,audit
 from .security import user,role,representative,db_session,password_hash,password_ok,AUTH,ENV,public_url
@@ -15,11 +17,16 @@ from .domain import TAXONOMY,taxonomy as get_taxonomy,get_active,catalogue,candi
 from .seed import seed
 from .extraction import MAX_BYTES,parse_source
 from .limits import budget
+from .scoring import inputs as scoring_inputs,POLICY_VERSION,POLICY_DESCRIPTION,LEGACY_POLICY_DESCRIPTION,number_text,rounded
 
 @asynccontextmanager
 async def lifespan(app):
     seed();yield
 app=FastAPI(title='Meraki API',version='0.1.0',lifespan=lifespan,docs_url='/api/docs',openapi_url='/api/openapi.json')
+@app.exception_handler(RequestValidationError)
+async def validation_error(request,error):
+    # Do not echo passwords or non-finite input values into error responses.
+    return JSONResponse(status_code=422,content={'detail':'; '.join('.'.join(str(p) for p in e['loc'][1:])+': '+e['msg'] for e in error.errors())})
 from .legacy_api import router as legacy_router
 app.include_router(legacy_router)
 app.add_middleware(CORSMiddleware,allow_origins=os.getenv('CORS_ORIGINS','http://127.0.0.1:5173,http://localhost:5173').split(','),allow_methods=['GET','POST','PUT','DELETE'],allow_headers=['Authorization','Content-Type','Idempotency-Key'])
@@ -119,10 +126,18 @@ def firebase_onboard(body:Provision,request:Request,db=Depends(db_session)):
         org=add(db,'organization',{'name':body.university,'contact':claims['email']},state='pending').id
     u=add(db,'user',{'name':body.name,'email':claims['email'],'role':body.role,'profile':{'tags':[]}},id=id,org=org,state='active');db.commit();return safe_user(u)
 
-class Profile(BaseModel):tags:list[str]=Field(max_length=30)
+Percentage=Annotated[float,Field(strict=True,ge=0,le=100,allow_inf_nan=False)]
+class ScoringRequest(BaseModel):
+    model_config=ConfigDict(extra='forbid')
+    tags:list[str]=Field(max_length=30)
+    scores:dict[str,Percentage]=Field(default_factory=dict)
+    interest_contribution:Percentage=70
+class Profile(ScoringRequest):pass
 @app.put('/api/profile')
 def profile(body:Profile,u=Depends(user),db=Depends(db_session)):
-    role(u,'student');validate_tags(body.tags,db);u=db.get(Record,u.id);u.data={**u.data,'profile':{'tags':list(dict.fromkeys(body.tags))}}
+    role(u,'student')
+    preferences=scoring_inputs(body.tags,body.scores,body.interest_contribution,get_taxonomy(db),allow_empty=True)
+    u=db.get(Record,u.id);u.data={**u.data,'profile':preferences}
     audit(db,u.id,'profile_changed',u.id);db.commit();return safe_user(u)
 @app.get('/api/courses')
 def courses(q:str='',tag:str='',db=Depends(db_session)):
@@ -132,12 +147,19 @@ def courses(q:str='',tag:str='',db=Depends(db_session)):
 @app.get('/api/courses/{cid}')
 def course(cid:str,u=Depends(user),db=Depends(db_session)):
     c=current_course(db,cid);event(db,u,'course_view',course_id=cid,organization_id=c['org']);db.commit();return c
-class Recommend(BaseModel):tags:list[str]=Field(min_length=1,max_length=30)
+class Recommend(ScoringRequest):
+    tags:list[str]=Field(min_length=1,max_length=30)
 @app.post('/api/recommendations')
 def recommendations(body:Recommend,u=Depends(user),db=Depends(db_session)):
+    role(u,'student');terms=get_taxonomy(db)
+    preferences=scoring_inputs(body.tags,body.scores,body.interest_contribution,terms)
     budget(db,u.id,'recommend',30)
-    role(u,'student');validate_tags(body.tags,db);active=get_active(db);rows=rank(candidates(db,body.tags,active.version_id),body.tags,get_taxonomy(db))
-    r=add(db,'recommendation',{'tags':sorted(set(body.tags)),'tag_labels':{t['id']:t['label'] for t in get_taxonomy(db)},'items':rows,'version_id':active.version_id,'scoring_version':'selected-coverage-70-30-v1','result_limit':100},owner=u.id)
+    active=get_active(db)
+    options={'scores':preferences['scores'],'interest_contribution':preferences['interest_contribution'],'terms':terms}
+    rows=rank(candidates(db,body.tags,active.version_id,**options),body.tags,**options)
+    r=add(db,'recommendation',{**preferences,'tag_labels':{t['id']:t['label'] for t in terms},
+        'items':rows,'version_id':active.version_id,'scoring_policy':POLICY_DESCRIPTION,'result_limit':100},owner=u.id)
+    u=db.get(Record,u.id);u.data={**u.data,'profile':preferences}
     event(db,u,'search',run_id=r.id,version_id=active.version_id);db.commit();return record(r)
 @app.get('/api/history')
 def history(u=Depends(user),db=Depends(db_session)):
@@ -204,10 +226,22 @@ def report(rid:str,u=Depends(user),db=Depends(db_session)):
     story.append(Paragraph(escape(f'Created: {r.created_at[:10]} | Ontology: {r.data["version_id"]}'),styles['Normal']))
     labels=r.data.get('tag_labels',{})
     story.append(Paragraph(escape('Preferences: '+', '.join(labels.get(t,t) for t in r.data['tags'])),styles['Normal']))
+    modern=r.data.get('scoring_version')=='degree-category-score-coverage-v2'
+    if modern:
+        story.append(Paragraph(escape('Student scores: '+', '.join(f'{labels.get(t,t)}: {number_text(r.data["scores"][t])}%' for t in r.data['tags'])),styles['Normal']))
+        configured=f'Configured contributions: interests {number_text(r.data["interest_contribution"])}%; aptitudes {number_text(r.data["aptitude_contribution"])}%.'
+        effective=r.data['contributions']
+        story.append(Paragraph(escape(configured+f' Effective contributions: interests {number_text(effective["interest"])}%; aptitudes {number_text(effective["aptitude"])}%.'),styles['Normal']))
+        story.append(Paragraph(escape('Scoring policy: '+r.data['scoring_version']),styles['Normal']))
     for c in r.data['items']:
         story += [Spacer(1,16),Paragraph(escape(c['title']),styles['Heading2']),Paragraph(escape(c['university']+' | '+c['faculty']),styles['Normal']),Paragraph(escape(f'Preference match: {c["match"]}% | Matched: '+', '.join(labels.get(t,t) for t in c['matched_tags'])),styles['Normal']),Paragraph(escape(c.get('course_url','')),styles['Normal']),Paragraph(escape('Evidence: '+c.get('evidence','Source not provided')),styles['Normal'])]
+        if modern:
+            for kind,label in [('interest','Interest'),('aptitude','Aptitude')]:
+                d=c['scoring_details'][kind]
+                formula=f'{label}: matched score sum {number_text(d["matched_score_sum"])} / degree count {d["degree_count"]} = {rounded(d["coverage"]):.2f}% coverage; contribution {number_text(d["contribution"])}%.' if d['degree_count'] else f'{label}: matched score sum {number_text(d["matched_score_sum"])}; degree count 0; coverage 0% (no listed tags); contribution {number_text(d["contribution"])}%.'
+                story.append(Paragraph(escape(formula),styles['Normal']))
         if c.get('legacy_import'):story.append(Paragraph('Imported historical prototype record. Current availability and admission requirements are not reverified; the link opens the university catalogue or homepage.',styles['Normal']))
-    story += [Spacer(1,20),Paragraph('Score: 70% selected-interest coverage + 30% selected-aptitude coverage; one-family inputs are renormalized. This is a preference match, not a probability of admission or success. Eligibility is unknown unless verified. Demo courses are illustrative.',styles['Normal'])]
+    story += [Spacer(1,20),Paragraph(escape(r.data.get('scoring_policy',LEGACY_POLICY_DESCRIPTION)),styles['Normal'])]
     def footer(canvas,doc):
         canvas.setFont('Helvetica',8);canvas.setFillColor(HexColor('#52627A'));canvas.drawString(45,22,'Meraki | Private recommendation snapshot');canvas.drawRightString(doc.pagesize[0]-45,22,str(doc.page))
     SimpleDocTemplate(out,title='Meraki shortlist',topMargin=40,bottomMargin=40,leftMargin=45,rightMargin=45).build(story,onFirstPage=footer,onLaterPages=footer)
