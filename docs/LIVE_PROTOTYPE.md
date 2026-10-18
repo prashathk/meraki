@@ -58,3 +58,7 @@ Verification passed: 87 backend tests, the frontend build, desktop/mobile light/
 ## University first-login fix — 18 October 2026
 
 A verified university identity without an application profile now receives an inline profile-completion form when its university name is missing. This handles returning from Firebase email verification, which can interrupt initial registration. Existing accounts keep their saved organization and role; new memberships remain pending administrator verification. Empty or whitespace-only university names cannot create partial records. Verification: 92 backend tests and the frontend production build.
+
+## URL-only extraction fix — 18 October 2026
+
+Course preparation removes the browser's unused file-input placeholder before submitting a URL. The API also recognizes an empty, nameless multipart file as absent, allowing a public URL to reach the extraction worker. Named empty files receive an actionable validation error; real uploads still require scanning and private storage. Regression checks cover both NLP and Gemini dispatch, browser multipart formatting, URL-only requests, invalid empty inputs and normal PDF uploads. Verification: 99 backend tests and the frontend production build.

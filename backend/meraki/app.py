@@ -254,6 +254,13 @@ def sources(u=Depends(user),db=Depends(db_session)):
 @app.post('/api/sources')
 async def source(url:str=Form(''),method:Literal['nlp','gemini']=Form('nlp'),file:UploadFile|None=File(None),u=Depends(user),db=Depends(db_session)):
     representative(db,u)
+    url=url.strip()
+    # Browsers include an empty, nameless upload part for an unused file input.
+    # It is not a supplied document and must not hide a valid URL source.
+    if file is not None and not file.filename:
+        if await file.read(1):raise HTTPException(422,'The uploaded document must have a filename')
+        await file.close()
+        file=None
     if method=='gemini':
         from .gemini import require_configuration
         try:require_configuration()
@@ -266,6 +273,7 @@ async def source(url:str=Form(''),method:Literal['nlp','gemini']=Form('nlp'),fil
     source_data={'url':url,'method':method,'name':file.filename[:200] if file else url,'parser_version':'v1','provider':method}
     if file:
         content=await file.read(MAX_BYTES+1)
+        if not content:raise HTTPException(422,'The selected document is empty. Choose another file or clear it to use a URL.')
         if len(content)>MAX_BYTES:raise HTTPException(422,'Maximum upload size is 20 MB')
         from .scanning import scan
         try:source_data['malware_scan']=scan(content)

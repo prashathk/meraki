@@ -214,7 +214,7 @@ function Sources({onlyList=false}){
 
  const visibleDrafts=filterSource?drafts.filter(d=>d.source_id===filterSource):drafts;
 
- async function ingest(e:React.FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setError('');try{const uploaded=await api('/sources',{method:'POST',body:new FormData(e.currentTarget)});setFilterSource(uploaded.id);setSelected([]);qc.invalidateQueries({queryKey:['sources']});notify('Source queued. The background worker will extract every detected course.')}catch(e:any){setError(e.message)}finally{setBusy(false)}}
+ async function ingest(e:React.FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setError('');try{const form=new FormData(e.currentTarget);const file=form.get('file');const url=String(form.get('url')||'').trim();form.set('url',url);if(file instanceof File&&!file.name&&file.size===0)form.delete('file');if(!url&&!form.has('file'))throw new Error('Upload a document or supply a public URL.');const uploaded=await api('/sources',{method:'POST',body:form});setFilterSource(uploaded.id);setSelected([]);qc.invalidateQueries({queryKey:['sources']});notify('Source queued. The background worker will extract every detected course.')}catch(e:any){setError(e.message)}finally{setBusy(false)}}
 
  async function submit(){try{await api('/submissions',{method:'POST',body:JSON.stringify({ids:selected})});notify('Selected courses submitted for administrator review');setSelected([]);qc.invalidateQueries({queryKey:['drafts']})}catch(e:any){setError(e.message)}}
 
