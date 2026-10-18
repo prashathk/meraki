@@ -1,10 +1,13 @@
 export const token = () => sessionStorage.getItem('meraki_token') || '';
+export class ApiError extends Error {
+  constructor(message:string,public status:number,public code?:string){super(message);this.name='ApiError';}
+}
 export async function api<T = any>(path: string, options: RequestInit = {}): Promise<T> {
   if(import.meta.env.VITE_FIREBASE_CONFIG && import.meta.env.VITE_FIREBASE_CONFIG!=='{}' && token()){
     const {firebaseAuth}=await import('./firebase');const current=firebaseAuth().currentUser;if(current)sessionStorage.setItem('meraki_token',await current.getIdToken());
   }
   const response = await fetch('/api' + path, { ...options, headers: { ...(options.body instanceof FormData ? {} : {'Content-Type':'application/json'}), ...(token() ? {Authorization:'Bearer '+token()} : {}), ...options.headers } });
-  if (!response.ok) { const error = await response.json().catch(() => ({})); throw new Error(typeof error.detail==='string'?error.detail:JSON.stringify(error.detail || 'Request failed')); }
+  if (!response.ok) { const error = await response.json().catch(() => ({})); const detail=error.detail; throw new ApiError(typeof detail==='string'?detail:detail?.message||JSON.stringify(detail || 'Request failed'),response.status,detail?.code); }
   return response.json();
 }
 export async function downloadReport(id:string) {

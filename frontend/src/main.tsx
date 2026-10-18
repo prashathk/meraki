@@ -10,7 +10,7 @@ import {Compass,ArrowRight,Search,GraduationCap,Building2,ShieldCheck,Check,Plus
 
 import {z} from 'zod';
 
-import {api,downloadReport,Course,Tag} from './api';
+import {api,ApiError,downloadReport,Course,Tag} from './api';
 
 import './styles.css';
 import './midnight.css';
@@ -89,16 +89,25 @@ function Footer(){return <footer><Brand/><p>Find Your Path. Follow Your Passion.
 function Auth(){
 
  const [params]=useSearchParams();const [signup,setSignup]=useState(params.get('signup')==='1'),[role,setRole]=useState(params.get('role')||'student'),[busy,setBusy]=useState(false),[error,setError]=useState('');const {health,reload,notify,clearPrivate}=useApp();const navigate=useNavigate();
+ const [pendingProfile,setPendingProfile]=useState<{email:string;name:string}|null>(null);
+ async function onboard(name:string,university:string,email:string){
+  try{await api('/auth/firebase-onboard',{method:'POST',body:JSON.stringify({name,role:pendingProfile?'representative':role,university})});return true;}
+  catch(e){if(e instanceof ApiError&&e.code==='university_required'){setPendingProfile({email,name});setError('');return false;}throw e;}
+ }
 
  async function submit(e:React.FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setError('');const values=Object.fromEntries(new FormData(e.currentTarget));try{
 
+  if(pendingProfile){
+   if(!await onboard(String(values.name),String(values.university||''),pendingProfile.email))return;
+  }else{
   z.object({email:z.string().email(),password:z.string().min(signup?12:1)}).parse(values);
 
   if(health?.auth_provider==='firebase'){
 
    const {firebaseLogin}=await import('./firebase');const token=await firebaseLogin(String(values.email),String(values.password),signup);sessionStorage.setItem('meraki_token',token);
 
-   await api('/auth/firebase-onboard',{method:'POST',body:JSON.stringify({name:values.name||String(values.email).split('@')[0],role,university:values.university||''})});
+   const suggestedName=String(values.name||String(values.email).split('@')[0]).slice(0,100);
+   if(!await onboard(suggestedName.length>=2?suggestedName:'Meraki member',String(values.university||''),String(values.email)))return;
 
   }else{
 
@@ -107,16 +116,17 @@ function Auth(){
    const result=await api('/auth/login',{method:'POST',body:JSON.stringify(values)});sessionStorage.setItem('meraki_token',result.token);
 
   }
+  }
 
   clearPrivate();await reload();navigate('/app');
 
  }catch(e:any){setError(e.message)}finally{setBusy(false)}}
 
- return <><header className="public-header"><Brand/><div className="header-actions"><ThemeToggle/><Link to="/" className="text-link">Back to home</Link></div></header><main id="main" className="auth-page"><div className="auth-intro"><span className="eyebrow">WELCOME TO YOUR NEXT CHAPTER</span><h1>Your future.<br/><em>Your direction.</em></h1><p>Let’s turn your interests into possibilities.</p><div className="auth-quote"><Compass size={50}/><p>Find Your Path.<br/>Follow Your Passion.</p></div></div><section className="auth-card"><h2>{signup?'Make room for possibility.':'Welcome back.'}</h2><p>{signup?'Create your Meraki account to get started.':'Pick up where your journey left off.'}</p><div className="segmented"><button className={role==='student'?'active':''} onClick={()=>setRole('student')}><GraduationCap size={18}/>Student</button><button className={role==='representative'?'active':''} onClick={()=>setRole('representative')}><Building2 size={18}/>University team</button></div>
+ return <><header className="public-header"><Brand/><div className="header-actions"><ThemeToggle/><Link to="/" className="text-link">Back to home</Link></div></header><main id="main" className="auth-page"><div className="auth-intro"><span className="eyebrow">WELCOME TO YOUR NEXT CHAPTER</span><h1>Your future.<br/><em>Your direction.</em></h1><p>Let’s turn your interests into possibilities.</p><div className="auth-quote"><Compass size={50}/><p>Find Your Path.<br/>Follow Your Passion.</p></div></div><section className="auth-card"><h2>{pendingProfile?'Complete your university profile.':signup?'Make room for possibility.':'Welcome back.'}</h2><p>{pendingProfile?'Add your university name to finish setting up your account. Your membership will then await administrator verification.':signup?'Create your Meraki account to get started.':'Pick up where your journey left off.'}</p>{!pendingProfile&&<div className="segmented"><button disabled={busy} className={role==='student'?'active':''} onClick={()=>{setRole('student');setError('')}}><GraduationCap size={18}/>Student</button><button disabled={busy} className={role==='representative'?'active':''} onClick={()=>{setRole('representative');setError('')}}><Building2 size={18}/>University team</button></div>}
 
- <form onSubmit={submit}>{signup&&<><label>Full name<input name="name" required autoComplete="name"/></label>{role==='representative'&&<label>University name<input name="university" required/></label>}</>}<label>Email address<input type="email" name="email" required autoComplete="email"/></label><label>Password<input type="password" name="password" required minLength={signup?12:1} autoComplete={signup?'new-password':'current-password'}/></label>{signup&&<small>Use at least 12 characters. University memberships require verification.</small>}{error&&<div role="alert" className="error">{error}</div>}<button className="button full" disabled={busy}>{busy?'Please wait…':signup?'Create account':'Log in'}<ArrowRight size={17}/></button></form><p className="auth-toggle">{signup?'Already a member?':'New to Meraki?'} <button className="inline" onClick={()=>{setSignup(!signup);setError('')}}>{signup?'Log in':'Create an account'}</button></p>
+ <form onSubmit={submit}>{(signup||pendingProfile)&&<><label>Full name<input name="name" required minLength={2} maxLength={100} autoComplete="name" defaultValue={pendingProfile?.name}/></label>{(role==='representative'||pendingProfile)&&<label>University name<input name="university" required maxLength={200} autoFocus={!!pendingProfile}/></label>}</>}<label>Email address<input key={pendingProfile?'profile-email':'login-email'} type="email" name="email" required autoComplete="email" readOnly={!!pendingProfile} defaultValue={pendingProfile?.email}/></label>{!pendingProfile&&<label>Password<input type="password" name="password" required minLength={signup?12:1} autoComplete={signup?'new-password':'current-password'}/></label>}{signup&&!pendingProfile&&<small>Use at least 12 characters. University memberships require verification.</small>}{error&&<div role="alert" className="error">{error}</div>}<button className="button full" disabled={busy}>{busy?'Please wait…':pendingProfile?'Complete setup':signup?'Create account':'Log in'}<ArrowRight size={17}/></button></form>{pendingProfile?<p className="auth-toggle"><button className="inline" disabled={busy} onClick={async()=>{const {firebaseAuth}=await import('./firebase');await firebaseAuth().signOut();sessionStorage.removeItem('meraki_token');setPendingProfile(null);setSignup(false);setError('')}}>Back to login</button></p>:<p className="auth-toggle">{signup?'Already a member?':'New to Meraki?'} <button className="inline" disabled={busy} onClick={()=>{setSignup(!signup);setError('')}}>{signup?'Log in':'Create an account'}</button></p>}
 
- {health?.auth_provider==='firebase'&&<>{health?.google_sign_in_enabled&&<button className="button secondary full" disabled={busy} onClick={async()=>{setBusy(true);try{const {firebaseLogin}=await import('./firebase');const t=await firebaseLogin('','',false,true);sessionStorage.setItem('meraki_token',t);await api('/auth/firebase-onboard',{method:'POST',body:JSON.stringify({name:'Meraki member',role,university:role==='representative'?prompt('University name')||'':''})});clearPrivate();await reload();navigate('/app')}catch(e:any){setError(e.message)}finally{setBusy(false)}}}>Continue with Google</button>}<button className="inline" onClick={async()=>{const email=prompt('Your account email');if(email)try{const {resetPassword}=await import('./firebase');await resetPassword(email);notify('Password reset email requested.')}catch(e:any){notify(e.message)}}}>Forgot your password?</button></>}
+ {health?.auth_provider==='firebase'&&!pendingProfile&&<>{health?.google_sign_in_enabled&&<button className="button secondary full" disabled={busy} onClick={async()=>{setBusy(true);try{const {firebaseLogin,firebaseAuth}=await import('./firebase');const t=await firebaseLogin('','',false,true);sessionStorage.setItem('meraki_token',t);if(!await onboard('Meraki member','',firebaseAuth().currentUser?.email||''))return;clearPrivate();await reload();navigate('/app')}catch(e:any){setError(e.message)}finally{setBusy(false)}}}>Continue with Google</button>}<button className="inline" onClick={async()=>{const email=prompt('Your account email');if(email)try{const {resetPassword}=await import('./firebase');await resetPassword(email);notify('Password reset email requested.')}catch(e:any){notify(e.message)}}}>Forgot your password?</button></>}
 
  {health?.auth_provider==='development'&&<div className="demo-box"><strong>Development demo accounts</strong><span>Student: student@meraki.local</span><span>University: university@meraki.local</span><span>Admin: admin@meraki.local</span><small>Use DEMO_PASSWORD from your private local .env file. These accounts are disabled in production.</small></div>}</section></main></>}
 

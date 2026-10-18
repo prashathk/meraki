@@ -122,8 +122,9 @@ def firebase_onboard(body:Provision,request:Request,db=Depends(db_session)):
     if existing:return safe_user(existing)
     org=''
     if body.role=='representative':
-        if not body.university:raise HTTPException(422,'University required')
-        org=add(db,'organization',{'name':body.university,'contact':claims['email']},state='pending').id
+        university=body.university.strip()
+        if not university:raise HTTPException(422,{'code':'university_required','message':'Enter your university name to complete account setup.'})
+        org=add(db,'organization',{'name':university,'contact':claims['email']},state='pending').id
     u=add(db,'user',{'name':body.name,'email':claims['email'],'role':body.role,'profile':{'tags':[]}},id=id,org=org,state='active');db.commit();return safe_user(u)
 
 Percentage=Annotated[float,Field(strict=True,ge=0,le=100,allow_inf_nan=False)]

@@ -21,7 +21,7 @@ The public Cloud Run API also serves the compiled frontend. Its worker requires 
 
 The existing `infra/main.tf` describes a normal paid production database and was **not applied** for this trial deployment. Do not run `terraform apply` against this project assuming it preserves the free-trial configuration.
 
-Both services use request-based billing, zero minimum instances, one CPU and 2 GiB memory. The API allows at most two instances; the worker allows one. The application image is approximately 268 MB compressed, and only one image version was retained at initial deployment. These controls target the services' free usage allowances; they are not a hard spending cap. Network traffic, excessive usage and supporting services can still cause charges. Do not upgrade the SQL trial or enable billing on the separate Gemini Developer API Free Tier project without reviewing the consequences.
+Both services use request-based billing, zero minimum instances, one CPU and 2 GiB memory. The API allows at most four instances with 20 concurrent requests per instance; the worker allows one. The application image is approximately 268 MB compressed, and only one image version was retained at initial deployment. These controls target the services' free usage allowances; they are not a hard spending cap. Network traffic, excessive usage and supporting services can still cause charges. Do not upgrade the SQL trial or enable billing on the separate Gemini Developer API Free Tier project without reviewing the consequences.
 
 Two shutdown mechanisms are configured:
 
@@ -54,3 +54,7 @@ ClamAV signatures are baked into the image at build time; rebuild with updated s
 Student recommendations now support per-tag percentage scores and configurable contributions under `degree-category-score-coverage-v2`. The calculation uses each degree's complete unique category counts, with the same ranking in SQL before limiting results. Profile settings, calculation details and policy text are preserved in private history and PDFs; earlier recommendation snapshots retain their original results and policy. See [the scoring contract](RECOMMENDATION_SCORING.md).
 
 Verification passed: 87 backend tests, the frontend build, desktop/mobile light/dark checks, PDF rendering, 18 comparisons on live PostgreSQL, and live API checks for weights, profile persistence, snapshots and unchanged legacy history/PDF text. The release was tested at a preview revision before public traffic switched. No database schema migration or user-data rewrite was needed. The scheduled shutdown date remains unchanged.
+
+## University first-login fix — 18 October 2026
+
+A verified university identity without an application profile now receives an inline profile-completion form when its university name is missing. This handles returning from Firebase email verification, which can interrupt initial registration. Existing accounts keep their saved organization and role; new memberships remain pending administrator verification. Empty or whitespace-only university names cannot create partial records. Verification: 92 backend tests and the frontend production build.
